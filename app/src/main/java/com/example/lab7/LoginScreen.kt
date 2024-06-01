@@ -94,26 +94,35 @@ fun HandleLoginState(
 }
 
 @Composable
-fun LoginForm(loginViewModel: LoginViewModel, paddingValues: PaddingValues){
+fun LoginForm(loginViewModel: LoginViewModel, paddingValues: PaddingValues) {
     val usernameState by loginViewModel.username.observeAsState("")
-    val passwordState by loginViewModel.password.observeAsState(initial = "")
+    val passwordState by loginViewModel.password.observeAsState("")
     val rememberMeState by loginViewModel.rememberMe.observeAsState(false)
+
     var username by remember { mutableStateOf(usernameState) }
-    var password by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf(passwordState) }
     var rememberMe by remember { mutableStateOf(rememberMeState) }
     val isLoginEnabled = username.isNotBlank() && password.isNotBlank()
 
-    LaunchedEffect(usernameState,rememberMeState) {
-        username=usernameState
-        password=passwordState
-        rememberMe=rememberMeState
-        Log.d("PAM", "LoginForm: username $usernameState rememberMeState $rememberMeState")
+    LaunchedEffect(usernameState, passwordState, rememberMeState) {
+        if (usernameState != username) {
+            username = usernameState
+        }
+        if (passwordState != password) {
+            password = passwordState
+        }
+        if (rememberMeState != rememberMe) {
+            rememberMe = rememberMeState
+        }
+        Log.d("PAM", "LoginForm: username $usernameState password $passwordState rememberMe $rememberMeState")
     }
 
-    Box(modifier = Modifier
-        .fillMaxSize()
-        .background(Color.LightGray),
-        contentAlignment = Alignment.Center,) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.LightGray),
+        contentAlignment = Alignment.Center,
+    ) {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -135,9 +144,21 @@ fun LoginForm(loginViewModel: LoginViewModel, paddingValues: PaddingValues){
                     contentDescription = "Logo",
                 )
                 Spacer(modifier = Modifier.height(20.dp))
-                UsernameField(username, onChangeUsername = {username=it})
-                PasswordField(password,  onChangePassword = {password=it})
-                RememberMeSwitch(rememberMe) { isChecked -> rememberMe = isChecked }
+                UsernameField(username) { newUsername ->
+                    username = newUsername
+                    loginViewModel.updateUsername(newUsername)
+                    Log.d("PAM", "UsernameField: $username")
+                }
+                PasswordField(password) { newPassword ->
+                    password = newPassword
+                    loginViewModel.updatePassword(newPassword)
+                    Log.d("PAM", "PasswordField: $password")
+                }
+                RememberMeSwitch(rememberMe) { isChecked ->
+                    rememberMe = isChecked
+                    loginViewModel.updateRememberMe(isChecked)
+                    Log.d("PAM", "RememberMeSwitch: $rememberMe")
+                }
                 Spacer(modifier = Modifier.height(16.dp))
                 LoginButton(isLoginEnabled) {
                     loginViewModel.login(
@@ -150,6 +171,7 @@ fun LoginForm(loginViewModel: LoginViewModel, paddingValues: PaddingValues){
         }
     }
 }
+
 
 @Composable
 fun UsernameField(username:String, onChangeUsername:(String)->Unit){
